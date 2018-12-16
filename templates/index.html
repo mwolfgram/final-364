@@ -1,0 +1,23 @@
+{% if current_user.is_authenticated %}
+    <a href="{{ url_for('logout') }}">Sign Out {{current_user.username}}</a>
+{% else %}
+    <a href="{{ url_for('login') }}">Sign In</a>
+{% endif %}
+
+<div class="page-header">
+    <h1>{% if num_articles %}{{ num_articles }}{% else %}0{% endif %} Articles saved. </h1>
+    <p><a href="{{ url_for('see_all') }}">See all articles.</a></p>
+    <p><a href="{{ url_for('create_article') }}">Create article collection.</a></p>
+</div>
+
+<form method="POST">
+	{{ form.hidden_tag() }}
+	{{ form.search.label }} {{ form.search() }}
+	{{ form.submit() }}
+</form>
+
+<div>
+{% for message in get_flashed_messages() %}
+{{ message }}
+{% endfor %}
+</div>

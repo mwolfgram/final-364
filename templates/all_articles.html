@@ -1,0 +1,21 @@
+<ul>
+{% for sg in all_articles %}
+<li>
+  <h4>{{ sg[0] }}</h4>
+  <h5><a href="{{ sg[1] }}" target="_blank">Click here to view article</a></h5>
+</li>
+<br>
+{% endfor %}
+</ul>
+
+{% if not all_articles %}
+There are no saved favorite articles to show.
+{% endif %}
+
+<div>
+{% for message in get_flashed_messages() %}
+<strong>*** {{ message }} ***</strong>
+{% endfor %}
+</div>
+
+<a href="{{ url_for('index')}}">Return to add a new article</a>
