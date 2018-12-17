@@ -1,27 +1,25 @@
 # matthew wolfgram
 # si 364 001
-# final proj
-
-
+# final project - edamam food api // nutrition information
 
 import os
 import requests
 import json
-from flask import Flask, render_template, session, redirect, request, url_for, flash
+from flask import Flask, render_template, session, redirect, request, url_for, flash, request
 from flask_script import Manager, Shell
 from flask_wtf import FlaskForm
 from wtforms import StringField, SubmitField, FileField, PasswordField, BooleanField, SelectMultipleField, ValidationError
 from wtforms.validators import Required, Length, Email, Regexp, EqualTo
 from flask_sqlalchemy import SQLAlchemy
 import random
-from flask_migrate import Migrate, MigrateCommand  #delete these???
+from flask_migrate import Migrate, MigrateCommand
 from threading import Thread
+from flask_login import LoginManager, login_required, logout_user, login_user, UserMixin, current_user
 from werkzeug import secure_filename
 from werkzeug.security import generate_password_hash, check_password_hash
-import secrets 
+import secrets
 
-# Imports for login management
-from flask_login import LoginManager, login_required, logout_user, login_user, UserMixin, current_user
+# TO DO : rename everything,
 
 # Configure base directory of app
 basedir = os.path.abspath(os.path.dirname(__file__))
@@ -30,37 +28,42 @@ basedir = os.path.abspath(os.path.dirname(__file__))
 app = Flask(__name__)
 app.static_folder = 'static'
 app.config['SECRET_KEY'] = 'hardtoguessstring'
-app.config["SQLALCHEMY_DATABASE_URI"] = os.environ.get('DATABASE_URL') or "postgresql://localhost/edamam364"  # TODO: decide what your new database name will be, and create it in postgresql, before running this new application
+app.config["SQLALCHEMY_DATABASE_URI"] = os.environ.get("postgresql://localhost/edamam364") or "postgresql://localhost/edamam364"  # TODO: decide what your new database name will be, and create it in postgresql, before running this new application
 # Lines for db setup so it will work as expected
 app.config['SQLALCHEMY_COMMIT_ON_TEARDOWN'] = True
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 
-# Set up Flask debug and necessary additions to app
+## Statements for db setup (and manager setup if using Manager)
+db = SQLAlchemy(app)
 manager = Manager(app)
-db = SQLAlchemy(app) # For database use
-migrate = Migrate(app, db) # For database use/updating
-manager.add_command('db', MigrateCommand) # Add migrate command to manager
+migrate = Migrate(app, db)
+manager.add_command('db', MigrateCommand)
 
-    # Login configurations setup
+# Login configurations setup
 login_manager = LoginManager()
 login_manager.session_protection = 'strong'
 login_manager.login_view = 'login'
 login_manager.init_app(app) # set up login manager
 
-## Set up Shell context so it's easy to use the shell to debug
-# Define function
 def make_shell_context():
-    return dict( app=app, db=db)
-# Add function use to manager
+	return dict(app=app, db=db, User=User)
 manager.add_command("shell", Shell(make_context=make_shell_context))
 
-##### Set up Models #####
+##### model(s) setup #####
 
+# TO DO : decide on edamam database structure, translate this to here and below, templates too!
 # Set up association Table between search terms and articles  --- map these out!
 tags = db.Table('tags',db.Column('search_id',db.Integer, db.ForeignKey('search.id')),db.Column('article_id',db.Integer, db.ForeignKey('articles.id')))
 
 # Set up association Table between Articles and collections prepared by user
 user_collection = db.Table('user_collection',db.Column('article_id', db.Integer, db.ForeignKey('articles.id')),db.Column('collection_id',db.Integer, db.ForeignKey('personalCollections.id')))
+
+
+## ---- migration stuff must go below db and manager initializations ----
+## ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+migrate = Migrate(app, db) # For database use/updating
+manager.add_command('db', MigrateCommand) # Add migrate command to manager for use in the terminal
 
 # Special model for users to log in
 class User(UserMixin, db.Model):
@@ -92,7 +95,7 @@ class User(UserMixin, db.Model):
 
 
 # Other models
-# Similar to playlists... a user can create his/ehr
+# Similar to playlists... a user can create theirs
 class PersonalCollection(db.Model):
     __tablename__ = "personalCollections"
     id = db.Column(db.Integer, primary_key=True)
@@ -191,9 +194,9 @@ def get_or_create_article(db_session, title, url):
         db_session.commit()
         return article
 
-def get_or_create_personal_collection(db_session, name, article_list, current_user):
+def get_or_create_personal_collection(db_session, name, article_list, current_user): #add foodlist = [] or something?
     articleCollection = db_session.query(PersonalCollection).filter_by(name=name,user_id=current_user.id).first()
-    if articleCollection:
+    if articleCollection: #rename n stuff
         return articleCollection
     else:
         articleCollection = PersonalCollection(name=name,user_id=current_user.id,articles=[])
@@ -275,7 +278,7 @@ def index():
             feed_name=form.search.data
             response = requests.get(baseURL + feed_name)
             #print("RESPONSE TEXT", response.text)
-            articleInResponse = json.loads(response.text)['buzzes']
+            articleInResponse = json.loads(response.text)['buzzes'] #okay this is just a code error, it works otherwise -- change this later
             articleFieldsRequired = []
             for a in articleInResponse:
                 articleURL = "https://www.buzzfeed.com/"+a['canonical_path']
@@ -316,6 +319,5 @@ def create_article():
     return render_template('create_article_collection.html',form=form)
 
 if __name__ == '__main__':
-    db.create_all()
-    app.run(debug=True) # NEW: run with this: python challenge_buzzfeed.py runserver
-    # Also provides more tools for debugging
+    db.create_all() #creates models when you run the app
+    app.run(use_reloader=True, debug=True)
