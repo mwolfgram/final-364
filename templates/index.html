@@ -5,9 +5,9 @@
 {% endif %}
 
 <div class="page-header">
-    <h1>{% if num_articles %}{{ num_articles }}{% else %}0{% endif %} Articles saved. </h1>
-    <p><a href="{{ url_for('see_all') }}">See all articles.</a></p>
-    <p><a href="{{ url_for('create_article') }}">Create article collection.</a></p>
+    <h1>{% if num_recipes %}{{ num_recipes }}{% else %}0{% endif %} Recipes saved. </h1>
+    <p><a href="{{ url_for('see_all') }}">See all recipes.</a></p>
+    <p><a href="{{ url_for('create_recipe') }}">Create recipe collection.</a></p>
 </div>
 
 <form method="POST">

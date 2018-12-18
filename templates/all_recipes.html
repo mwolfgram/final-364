@@ -1,0 +1,21 @@
+<ul>
+{% for sg in all_recipes %}
+<li>
+  <h4>{{ sg[0] }}</h4>
+  <h5><a href="{{ sg[1] }}" target="_blank">Click here to view recipe</a></h5>
+</li>
+<br>
+{% endfor %}
+</ul>
+
+{% if not all_recipes %}
+There are no saved favorite recipes to show.
+{% endif %}
+
+<div>
+{% for message in get_flashed_messages() %}
+<strong>*** {{ message }} ***</strong>
+{% endfor %}
+</div>
+
+<a href="{{ url_for('index')}}">Return to add a new recipe</a>

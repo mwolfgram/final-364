@@ -1,3 +1,6 @@
+#mw
+#spike, hoping for good data collection and mapping w templates by 10:30 -- readme and everything else after that
+
 import os
 import requests
 import json
@@ -16,7 +19,7 @@ from werkzeug.security import generate_password_hash, check_password_hash
 import secrets
 
 all_recipes = []
-def collection(userq, diet_label = None, calorie_ct = None, excluded = None):
+def collection(userq, diet_label = None, calorie_ct = None, excluded = None): #add the params
 
     payload = {'app_id': secrets.app_key,
                    'app_key': secrets.app_secret,

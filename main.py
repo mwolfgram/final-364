@@ -1,6 +1,7 @@
 # matthew wolfgram
 # si 364 001
 # final project - edamam food api // nutrition information
+# i used code from the user-authentication example
 
 import os
 import requests
@@ -54,16 +55,16 @@ manager.add_command("shell", Shell(make_context=make_shell_context))
 ##### model(s) setup #####
 
 # TO DO : decide on edamam database structure, translate this to here and below, templates too!
-# Set up association Table between search terms and articles  --- map these out!
+# Set up association Table between search terms and recipes  --- map these out!
 
-tags = db.Table('tags',db.Column('search_id',db.Integer, db.ForeignKey('search.id')),db.Column('article_id',db.Integer, db.ForeignKey('articles.id')))
-# wtf to do with this 
-# Set up association Table between Articles and collections prepared by user
-user_collection = db.Table('user_collection',db.Column('article_id', db.Integer, db.ForeignKey('articles.id')),db.Column('collection_id',db.Integer, db.ForeignKey('personalCollections.id')))
+# Set up association Table between recipes (formerly s) and collections prepared by user
+#user_collection = db.Table('user_collection',db.Column('_id', db.Integer, db.ForeignKey('s.id')),db.Column('collection_id',db.Integer, db.ForeignKey('personalCollections.id')))
+user_collection = db.Table('user_collection',db.Column('recipe_id', db.Integer, db.ForeignKey('recipes.id')),db.Column('collection_id',db.Integer, db.ForeignKey('personalCollections.id')))
 
 ## ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 # Special model for users to log in
+# *** user, recipe, personal collection for models
 class User(UserMixin, db.Model):
     __tablename__ = "users"
     id = db.Column(db.Integer, primary_key=True)
@@ -94,30 +95,25 @@ class User(UserMixin, db.Model):
 
 # Other models
 # Similar to playlists... a user can create theirs
-class PersonalCollection(db.Model):
+class PersonalCollection(db.Model): #how does this link to the db setup above?
     __tablename__ = "personalCollections"
     id = db.Column(db.Integer, primary_key=True)
     name = db.Column(db.String(255))
     user_id = db.Column(db.Integer, db.ForeignKey("users.id"))
-    articles = db.relationship('Article',secondary=user_collection,backref=db.backref('personalCollections',lazy='dynamic'),lazy='dynamic')
+    recipes = db.relationship('Recipe',secondary=user_collection,backref=db.backref('personalCollections',lazy='dynamic'),lazy='dynamic') #*****change
 
-class Article(db.Model):
-    __tablename__ = "articles"
+class Recipe(db.Model): #*****change to Recipe, put all of the info here, how to put in ??
+    __tablename__ = "recipes"
     id = db.Column(db.Integer, primary_key=True)
     title = db.Column(db.String(128))
-    articleURL = db.Column(db.String(256))
+    source = db.Column(db.String(128))
+    yield_servings = db.Column(db.Integer)
+    ingredients = db.Column(db.String()) #what if it's a list?? how??
+    diet_labels = db.Column(db.String()) #what if it's a list?? how??
+    URL = db.Column(db.String(256))
 
     def __repr__(self):
-        return "{}, URL: {}".format(self.title,self.articleURL)
-
-class Search(db.Model):
-    __tablename__ = "search"
-    id = db.Column(db.Integer, primary_key=True)
-    term = db.Column(db.String(32),unique=True) # Only unique searches
-    articles = db.relationship('Article',secondary=tags,backref=db.backref('search',lazy='dynamic'),lazy='dynamic')
-
-    def __repr__(self):
-        return "{} : {}".format(self.id, self.term)
+        return "recipe: {}, yield: {}, ingredients: {}, diet_labels: {}, URL: {}".format(self.title, self.yield_servings, self.ingredients, self.diet_labels, self.URL)
 
 ## DB load functions
 @login_manager.user_loader
@@ -149,60 +145,60 @@ class LoginForm(FlaskForm):
     remember_me = BooleanField('Keep me logged in')
     submit = SubmitField('Log In')
 
-class ArticleSearchForm(FlaskForm):
-    search = StringField("Enter a search term:", validators=[Required()])
+class RecipeSearchForm(FlaskForm): #***** recipe search form, add other recipe options
+    search = StringField("Enter a food:", validators=[Required()])
     submit = SubmitField('Submit')
 
 class CollectionCreateForm(FlaskForm):
     name = StringField('Collection Name',validators=[Required()])
-    article_picks = SelectMultipleField('Articles to include')
+    _picks = SelectMultipleField('Recipes to include') #***** recipes to include
     submit = SubmitField("Create Collection")
 
 ##### Helper functions
 
 ### For database additions / get_or_create functions
 
-def get_article_by_id(id):
-    """returns article or None"""
-    article_obj = Article.query.filter_by(id=id).first()
-    return article_obj
+def get__by_id(id): #*****get recipe by id
+    """returns  or None"""
+    _obj = Recipe.query.filter_by(id=id).first()
+    return _obj
 
-def get_or_create_search_term(db_session, term, article_list = []):
+def get_or_create_search_term(db_session, term, _list = []): #*****recipe_list, what does this translate to????????????????????????????????????
     searchTerm = db_session.query(Search).filter_by(term=term).first()
     if searchTerm:
-        print("Found term")
+        print("Found term") #replace terms with other stuff?????
         return searchTerm
     else:
         print("Added term")
         searchTerm = Search(term=term)
-        for a in article_list:
-            article = get_or_create_article(db_session, title = a[1], url = a[2])
-            searchTerm.articles.append(article)
+        for a in _list:
+            recipe = get_or_create_(db_session, title = a[1], url = a[2]) #???????????????????????????????????????????
+            searchTerm.Recipes.append(Recipe)
         db_session.add(searchTerm)
         db_session.commit()
         return searchTerm
 
-def get_or_create_article(db_session, title, url):
-    article = db_session.query(Article).filter_by(title = title).first()
-    if article:
-        return article
+def get_or_create_(db_session, title, url):
+     = db_session.query().filter_by(title = title).first()
+    if :
+        return
     else:
-        article = Article(title = title, articleURL = url)
-        db_session.add(article)
+         = (title = title, URL = url)
+        db_session.add()
         db_session.commit()
-        return article
+        return
 
-def get_or_create_personal_collection(db_session, name, article_list, current_user): #add foodlist = [] or something?
-    articleCollection = db_session.query(PersonalCollection).filter_by(name=name,user_id=current_user.id).first()
-    if articleCollection: #rename n stuff
-        return articleCollection
+def get_or_create_personal_collection(db_session, name, _list, current_user): #add foodlist = [] or something?
+    Collection = db_session.query(PersonalCollection).filter_by(name=name,user_id=current_user.id).first()
+    if Collection: #rename n stuff
+        return Collection
     else:
-        articleCollection = PersonalCollection(name=name,user_id=current_user.id,articles=[])
-        for a in article_list:
-            articleCollection.articles.append(a)
-        db_session.add(articleCollection)
+        Collection = PersonalCollection(name=name,user_id=current_user.id,recipes=[])
+        for a in _list:
+            Collection.recipes.append(a)
+        db_session.add(Collection)
         db_session.commit()
-        return articleCollection
+        return Collection
 
 
 
@@ -256,65 +252,76 @@ def secret():
 
 
 ## Main routes
-@app.route('/', methods=['GET', 'POST'])
+@app.route('/', methods=['GET', 'POST'])#****************************************************************************************
 def index():
-    articles = Article.query.all()
-    num_articles = len(articles)
-    form = ArticleSearchForm()
-    if form.validate_on_submit():
-        if db.session.query(Search).filter_by(term=form.search.data).first():
-            term = db.session.query(Search).filter_by(term=form.search.data).first()
-            all_articles = []
-            for i in term.articles.all():
-                all_articles.append((i.title, i.articleURL))
-            print(all_articles)
-            return render_template('all_articles.html', all_articles = all_articles)
-        else:
-            # if it's not in the database, make a new request and then add to db
-            # add the search term and articles to database --- what to add in your contexts??
-            baseURL = "https://www.buzzfeed.com/api/v2/feeds/"
-            feed_name=form.search.data
-            response = requests.get(baseURL + feed_name)
-            #print("RESPONSE TEXT", response.text)
-            articleInResponse = json.loads(response.text)['buzzes'] #okay this is just a code error, it works otherwise -- change this later
-            articleFieldsRequired = []
-            for a in articleInResponse:
-                articleURL = "https://www.buzzfeed.com/"+a['canonical_path']
-                article_tuple = (a['id'], a['title'], articleURL)
-                if article_tuple not in articleFieldsRequired:
-                    articleFieldsRequired.append(article_tuple)
-            print("Article fields required:", articleFieldsRequired)
-            searchterm = get_or_create_search_term(db.session, form.search.data, articleFieldsRequired)
-            print(searchterm)
-            return "Added to DB"
-    return render_template('index.html', form=form, num_articles=num_articles)
+    all_recipes = []
+    def collection(userq, diet_label = None, calorie_ct = None, excluded = None): #add the params
 
-@app.route('/all_articles')
+        payload = {'app_id': secrets.app_key,
+                       'app_key': secrets.app_secret,
+                       'q': userq,
+                       'diet': diet_label,
+                       'calories': calorie_ct,
+                       'excluded': excluded}
+        r = requests.get("https://api.edamam.com/search", params = payload)
+
+        supermarket = r.json()
+        #print(supermarket)
+        for recipes in supermarket['hits']:
+                for recipe in recipes:
+                    try:
+                        if recipes[recipe] != False:
+                            dish = recipes[recipe]
+
+                            label = dish['label']           #0 - dish name
+                            source = dish['source']         #1 - name of original source
+                            url = dish['url']               #2 - link to original source
+                            batch_yield = dish['yield'] #change to float or something?                          #3 - yield
+                            dietLabels = dish['dietLabels'] #what to do if there are none?                      #4 - one of “balanced”, “high-protein”, “high-fiber”, “low-fat”, “low-carb”, “low-sodium”
+                            healthLabels = dish['healthLabels'] #what to do if there are none?                  #5 - vegan, alcohol-free, etc.
+                            cautions = dish['cautions'] #what to do if there are none?                          #6 - milk, tree nuts, etc
+                            ingredientLines = dish['ingredientLines'] #***you gotta take apart this list        #7 - all strings
+                            caloric = dish['calories']                                                          #8 - into of calories
+
+                            recipe_data = (label, source, url, int(batch_yield), dietLabels, healthLabels, cautions, ingredientLines, int(caloric))
+                            all_recipes.append(recipe_data)
+                            # **** what to do if lists are empty??? how to handle the separate elements??
+
+                    except:
+                        continue
+        for x in all_recipes:
+            print('------------')
+            print(x)
+            print('------------')
+        return all_recipes
+    return render_template('index.html', form=form, num_recipes=num_recipes) #*****rename this stuff in the index template
+
+@app.route('/all_recipes') #****************************************************************************************
 def see_all():
-    all_articles = [] # To be tuple list of title, genre
-    articles = Article.query.all()
-    for a in articles:
-        all_articles.append((a.title,a.articleURL))
-    return render_template('all_articles.html', all_articles=all_articles)
+    all_recipes = [] # To be tuple list of title, genre
+    recipes = Recipe.query.all()
+    for a in recipes:
+        all_recipes.append((a.title,a.URL))
+    return render_template('all_recipes.html', all_recipes=all_recipes)
 
-@app.route('/create_article_collection',methods=["GET","POST"])
+@app.route('/create__collection',methods=["GET","POST"])
 @login_required
-def create_article():
+def create_():
     form = CollectionCreateForm()
     choices = []
     #populating your multi select picklist
-    for a in Article.query.all():
+    for a in Recipe.query.all():
         choices.append((a.id, a.title))
-    form.article_picks.choices = choices
+    form._picks.choices = choices
 
     if request.method == 'POST':
-        articles_selected = form.article_picks.data # list?
-        print("ARTICLES SELECTED", articles_selected)
-        article_objects = [get_article_by_id(int(id)) for id in articles_selected]
-        print("ARTICLES RETURNED", article_objects)
-        get_or_create_personal_collection(db.session,current_user=current_user,name=form.name.data,article_list=article_objects) # How to access user, here and elsewhere TODO
+        recipes_selected = form._picks.data # list?
+        print("RECIPES SELECTED", recipes_selected)
+        _objects = [get__by_id(int(id)) for id in recipes_selected]
+        print("RECIPES RETURNED", _objects)
+        get_or_create_personal_collection(db.session,current_user=current_user,name=form.name.data,recipe_list=recipe_objects) # How to access user, here and elsewhere TODO
         return "Collection made"
-    return render_template('create_article_collection.html',form=form)
+    return render_template('create__collection.html',form=form) #remap these templates
 
 if __name__ == '__main__':
     db.create_all() #creates models when you run the app
