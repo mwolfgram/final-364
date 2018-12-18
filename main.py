@@ -19,17 +19,16 @@ from werkzeug import secure_filename
 from werkzeug.security import generate_password_hash, check_password_hash
 import secrets
 
-# TO DO : rename everything,
-
 # Configure base directory of app
 basedir = os.path.abspath(os.path.dirname(__file__))
 
 # Application configurations
 app = Flask(__name__)
-app.static_folder = 'static'
+app.debug = True
+app.use_reloader = True
+app.static_folder = 'static' # what is this
 app.config['SECRET_KEY'] = 'hardtoguessstring'
 app.config["SQLALCHEMY_DATABASE_URI"] = os.environ.get("postgresql://localhost/edamam364") or "postgresql://localhost/edamam364"  # TODO: decide what your new database name will be, and create it in postgresql, before running this new application
-# Lines for db setup so it will work as expected
 app.config['SQLALCHEMY_COMMIT_ON_TEARDOWN'] = True
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 
@@ -49,21 +48,20 @@ def make_shell_context():
 	return dict(app=app, db=db, User=User)
 manager.add_command("shell", Shell(make_context=make_shell_context))
 
+################################ good above here ################################
+## ***** how many get_or_creates? get/create recipe, get or create collection
+
 ##### model(s) setup #####
 
 # TO DO : decide on edamam database structure, translate this to here and below, templates too!
 # Set up association Table between search terms and articles  --- map these out!
-tags = db.Table('tags',db.Column('search_id',db.Integer, db.ForeignKey('search.id')),db.Column('article_id',db.Integer, db.ForeignKey('articles.id')))
 
+tags = db.Table('tags',db.Column('search_id',db.Integer, db.ForeignKey('search.id')),db.Column('article_id',db.Integer, db.ForeignKey('articles.id')))
+# wtf to do with this 
 # Set up association Table between Articles and collections prepared by user
 user_collection = db.Table('user_collection',db.Column('article_id', db.Integer, db.ForeignKey('articles.id')),db.Column('collection_id',db.Integer, db.ForeignKey('personalCollections.id')))
 
-
-## ---- migration stuff must go below db and manager initializations ----
 ## ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-
-migrate = Migrate(app, db) # For database use/updating
-manager.add_command('db', MigrateCommand) # Add migrate command to manager for use in the terminal
 
 # Special model for users to log in
 class User(UserMixin, db.Model):
@@ -272,8 +270,8 @@ def index():
             print(all_articles)
             return render_template('all_articles.html', all_articles = all_articles)
         else:
-            # request articles for that search term
-            # add the search term and articles to database
+            # if it's not in the database, make a new request and then add to db
+            # add the search term and articles to database --- what to add in your contexts??
             baseURL = "https://www.buzzfeed.com/api/v2/feeds/"
             feed_name=form.search.data
             response = requests.get(baseURL + feed_name)
